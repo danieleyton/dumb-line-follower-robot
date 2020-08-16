@@ -1,3 +1,4 @@
+import curses
 import sim
 import sys
 import numpy as np
@@ -31,11 +32,52 @@ def automaticDrive(clientID, leftSensor, middleSensor, rightSensor, leftJointDyn
         sim.simxSetJointTargetVelocity(clientID, leftJointDynamic, linearVelocityLeft/wheelRadius, sim.simx_opmode_blocking)
         sim.simxSetJointTargetVelocity(clientID, rightJointDynamic, linearVelocityRight/wheelRadius, sim.simx_opmode_blocking)
 
-#def manualControl():
+def manualControl(stdscr):
     # nu se unu
+    stdscr.addstr(0,10,"Presione 'q' para salir")
+    stdscr.refresh()
 
-def main():
+    key = ''
+    while key != ord('q'):
+        key = stdscr.getch()
+        stdscr.addch(20,25,key)
+        stdscr.refresh()
+        if key == curses.KEY_UP:
+            stdscr.addstr(2, 20, "Up")
+            # mover robot hacia adelante
+            linearVelocityLeft = 0.3
+            linearVelocityRight = 0.3
+            sim.simxSetJointTargetVelocity(clientID, leftJointDynamic, linearVelocityLeft/wheelRadius, sim.simx_opmode_blocking)
+            sim.simxSetJointTargetVelocity(clientID, rightJointDynamic, linearVelocityRight/wheelRadius, sim.simx_opmode_blocking)
+
+        elif key == curses.KEY_DOWN:
+            stdscr.addstr(3, 20, "Down")
+            # mover robot hacia atras ??
+            linearVelocityLeft = 0
+            linearVelocityRight = 0
+            sim.simxSetJointTargetVelocity(clientID, leftJointDynamic, linearVelocityLeft/wheelRadius, sim.simx_opmode_blocking)
+            sim.simxSetJointTargetVelocity(clientID, rightJointDynamic, linearVelocityRight/wheelRadius, sim.simx_opmode_blocking)
+        elif key == curses.KEY_LEFT:
+            stdscr.addstr(4, 20, "Left")
+            linearVelocityLeft = 0.3*0.3
+            linearVelocityRight = 0.3
+            sim.simxSetJointTargetVelocity(clientID, leftJointDynamic, linearVelocityLeft/wheelRadius, sim.simx_opmode_blocking)
+            sim.simxSetJointTargetVelocity(clientID, rightJointDynamic, linearVelocityRight/wheelRadius, sim.simx_opmode_blocking)
+        elif key == curses.KEY_RIGHT:
+            stdscr.addstr(5, 20, "Right")
+            linearVelocityLeft = 0.3
+            linearVelocityRight = 0.3*0.3
+            sim.simxSetJointTargetVelocity(clientID, leftJointDynamic, linearVelocityLeft/wheelRadius, sim.simx_opmode_blocking)
+            sim.simxSetJointTargetVelocity(clientID, rightJointDynamic, linearVelocityRight/wheelRadius, sim.simx_opmode_blocking)
+    curses.endwin()
+
+def main(stdscr):
+    #stdscr = curses.initscr()
+    curses.noecho()
+    curses.cbreak()
+    stdscr.keypad(True)
     sim.simxFinish(-1) # Terminar todas las conexiones
+    global clientID, lineTracerBase, leftSensor, middleSensor, rightSensor, leftJoin, rightJoint, leftJointDynamic, rightJointDynamic, nominalLinearVelocity, wheelRadius, interWheelDistance
     clientID=sim.simxStart('127.0.0.1',19999,True,True,5000,5) # Iniciar una nueva conexion
 
     if clientID != -1:
@@ -64,10 +106,30 @@ def main():
         sim.simxSetJointTargetVelocity(clientID, leftJointDynamic, 0/wheelRadius, sim.simx_opmode_blocking)
         sim.simxSetJointTargetVelocity(clientID, rightJointDynamic, 0/wheelRadius, sim.simx_opmode_blocking)
 
-        automaticDrive(clientID, leftSensor, middleSensor, rightSensor, leftJointDynamic, rightJointDynamic, wheelRadius, nominalLinearVelocity)
+        opt = 0
+        while opt != ord('3'):
+            stdscr.addstr(0, 10, "Para usar el modo automatico presione 1\nPara usar el modo manual presione 2\nPara salir presione 3")
+            opt = stdscr.getch()
+
+            if opt == ord('1'):
+                # enter modo automatico
+                stdscr.addstr(2,10, "Enter modo automatico")
+                automaticDrive(clientID, leftSensor, middleSensor, rightSensor, leftJointDynamic, rightJointDynamic, wheelRadius, nominalLinearVelocity)
+            elif opt == ord('2'):
+                # enter modo manual
+                stdscr.addstr(4, 10, "Enter modo manual")
+                manualControl(stdscr)
+            if opt == ord('3'):
+                # quit
+                stdscr.clear()
+                stdscr.addstr(1, 10, "Saliendo del programa..")
+                curses.endwin()
+
+
+        
     else:
         print("Error: no se puede conectar")
         sys.exit("Error: no se puede conectar")
 
-
+curses.wrapper(main)
 main()
